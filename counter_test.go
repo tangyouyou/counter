@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/go-redis/redis"
 	"github.com/stretchr/testify/assert"
+	"math"
 	"testing"
 	"time"
 )
@@ -14,6 +15,11 @@ var keyInt8 string
 var keyInt16 string
 var keyInt32 string
 var keyInt64 string
+
+var keyUint8 string
+var keyUint16 string
+var keyUint32 string
+var keyUint64 string
 
 func init() {
 	host := "192.168.244.78"
@@ -34,6 +40,11 @@ func init() {
 	keyInt16 = "user_int16_190950"
 	keyInt32 = "user_int32_190950"
 	keyInt64 = "user_int64_190950"
+
+	keyUint8 = "user_uint8_190950"
+	keyUint16 = "user_uint16_190950"
+	keyUint32 = "user_uint32_190950"
+	keyUint64 = "user_uint64_190950"
 }
 
 func TestCounterCluster_SetInt8Value(t *testing.T) {
@@ -72,11 +83,11 @@ func TestCounterCluster_SetInt32Value(t *testing.T) {
 	var err error
 	counter := NewCounter(redisDb, keyInt32)
 
-	err = counter.SetInt32Value(0, 29)
+	err = counter.SetInt32Value(0, 0)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = counter.SetInt32Value(1, 123456789)
+	err = counter.SetInt32Value(1, 29)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -84,6 +95,50 @@ func TestCounterCluster_SetInt32Value(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = counter.SetInt32Value(3, math.MaxInt32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = counter.SetInt32Value(4, math.MinInt32)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCounterCluster_GetInt32Value(t *testing.T) {
+	counter := NewCounter(redisDb, keyInt32)
+	num0, _ := counter.GetInt32Value(0)
+	assert.Equal(t, num0, 0)
+	num1, _ := counter.GetInt32Value(1)
+	assert.Equal(t, num1, 29)
+	num2, _ := counter.GetInt32Value(2)
+	assert.Equal(t, num2, -5)
+	num3, _ := counter.GetInt32Value(3)
+	assert.Equal(t, num3, math.MaxInt32)
+	num4, _ := counter.GetInt32Value(4)
+	assert.Equal(t, num4, math.MinInt32)
+}
+
+func TestCounterCluster_SetUInt32Value(t *testing.T) {
+	var err error
+	counter := NewCounter(redisDb, keyUint32)
+
+	err = counter.SetUInt32Value(0, math.MaxUint32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = counter.SetUInt32Value(1, 123)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestCounterCluster_GetUInt32Value(t *testing.T) {
+	counter := NewCounter(redisDb, keyUint32)
+	num1, _ := counter.GetUInt32Value(0)
+	assert.Equal(t, num1, math.MaxUint32)
+	num2, _ := counter.GetUInt32Value(1)
+	assert.Equal(t, num2, 123)
 }
 
 func TestCounterCluster_SetInt64Value(t *testing.T) {
@@ -104,12 +159,4 @@ func TestCounterCluster_SetInt64Value(t *testing.T) {
 	}
 }
 
-func TestCounterCluster_GetInt32Value(t *testing.T) {
-	counter := NewCounter(redisDb, keyInt32)
-	num1, _ := counter.GetInt32Value(0)
-	assert.Equal(t, num1, 29)
-	num2, _ := counter.GetInt32Value(1)
-	assert.Equal(t, num2, 123456789)
-	num3, _ := counter.GetInt32Value(2)
-	assert.Equal(t, num3, -5)
-}
+

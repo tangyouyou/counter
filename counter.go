@@ -12,6 +12,8 @@ const (
 	int16Bits = uint(16)
 	int32Bits = uint(32)
 	int64Bits = uint(64)
+	signPositive = 1
+	signNegative = -1
 	setScript = `
 local offsetIndex = 2
 for _, value in ipairs(ARGV) do
@@ -21,10 +23,9 @@ end
 `
 	getScript = `
 local bitArr = {}
-local bitIndex = 0
+local bitIndex = 1
 for _, offset in ipairs(ARGV) do
 	bitArr[bitIndex] = tostring(redis.call("getbit", KEYS[1], offset))
-	offset = offset + 1
 	bitIndex = bitIndex + 1
 end
 return bitArr
@@ -176,7 +177,7 @@ func (c counterCluster) SetUInt64Value(offset uint32, value uint64) error {
 	return c.setValue(offset, int(value), int64Bits)
 }
 
-func (c counterCluster) getValue(offset uint32, bits uint) (int, error) {
+func (c counterCluster) getValue(offset uint32, bits uint, sign int) (int, error) {
 	args := make([]string, 0)
 	startOffset := int(offset * uint32(bits))
 	for i := 0; i < int(bits); i++ {
@@ -189,7 +190,21 @@ func (c counterCluster) getValue(offset uint32, bits uint) (int, error) {
 	res, err := cmd.Result()
 	inputByte, _ := json.Marshal(res)
 	_ = json.Unmarshal(inputByte, &binArr)
-	num := covertBinToBcd(binArr)
+	var num int
+	if sign == -1 && binArr[0] == "1" {
+		// the sign bit is reversed
+		for i := 0; i < len(binArr); i++ {
+			if binArr[i] == "0" {
+				binArr[i] = "1"
+			} else {
+				binArr[i] = "0"
+			}
+		}
+		num = covertBinToBcd(binArr)
+		num = 0 - (num + 1)
+	} else {
+		num = covertBinToBcd(binArr)
+	}
 
 	if err == redis.Nil {
 		return num, nil
@@ -199,33 +214,33 @@ func (c counterCluster) getValue(offset uint32, bits uint) (int, error) {
 }
 
 func (c counterCluster) GetInt8Value(offset uint32) (int, error) {
-	return c.getValue(offset, int8Bits)
+	return c.getValue(offset, int8Bits, signNegative)
 }
 
 func (c counterCluster) GetInt16Value(offset uint32) (int, error) {
-	return c.getValue(offset, int16Bits)
+	return c.getValue(offset, int16Bits, signNegative)
 }
 
 func (c counterCluster) GetInt32Value(offset uint32) (int, error) {
-	return c.getValue(offset, int32Bits)
+	return c.getValue(offset, int32Bits, signNegative)
 }
 
 func (c counterCluster) GetInt64Value(offset uint32) (int, error) {
-	return c.getValue(offset, int64Bits)
+	return c.getValue(offset, int64Bits, signNegative)
 }
 
 func (c counterCluster) GetUInt8Value(offset uint32) (int, error) {
-	return c.getValue(offset, int8Bits)
+	return c.getValue(offset, int8Bits, signPositive)
 }
 
 func (c counterCluster) GetUInt16Value(offset uint32) (int, error) {
-	return c.getValue(offset, int16Bits)
+	return c.getValue(offset, int16Bits, signPositive)
 }
 
 func (c counterCluster) GetUInt32Value(offset uint32) (int, error) {
-	return c.getValue(offset, int32Bits)
+	return c.getValue(offset, int32Bits, signPositive)
 }
 
 func (c counterCluster) GetUInt64Value(offset uint32) (int, error) {
-	return c.getValue(offset, int64Bits)
+	return c.getValue(offset, int64Bits, signPositive)
 }
