@@ -68,7 +68,7 @@ Redis 主要通过 setbit、getbit 的命令设置 Bitmap 的数据结构，在 
 # Go语言实现计数器 #
 对于计数器的实现原理，主要需要考虑以下方面的内容，“Redis setbit、gitbit命令操作”、Lua脚本保证数据一致性”、“二进制转十进制”、"十进制转二进制"、支持不同 int 类型的操作方法”
 
-二进制转十进制代码
+**二进制转十进制代码**
 <pre>
   func covertBinToBcd(s []string) (num int) {
 	l := len(s)
@@ -81,7 +81,7 @@ Redis 主要通过 setbit、getbit 的命令设置 Bitmap 的数据结构，在 
 }
 </pre>
 
-十进制转二进制代码
+**十进制转二进制代码**
 <pre>
 // Binary coded decimal is converted to Binary
 func convertBcdToBin(n int, bin int) (string, error) {
@@ -121,7 +121,7 @@ func convertBcdToBin(n int, bin int) (string, error) {
 </pre>
 
 
-Lua脚本保证数据一致性代码
+**Lua脚本保证数据一致性代码**
 <pre>
 setScript = `
 local offsetIndex = 2
@@ -141,7 +141,7 @@ return bitArr
 `
 </pre>
 
-支持不同 int 类型的操作方法
+**支持不同 int 类型的操作方法**
 <pre>
 Counter interface {
 		SetInt8Value(offset uint32, value int8) error
