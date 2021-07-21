@@ -55,6 +55,7 @@ type (
 	counterCluster struct {
 		r   *redis.Client
 		key string
+		bits uint
 	}
 )
 
@@ -243,4 +244,20 @@ func (c counterCluster) GetUInt32Value(offset uint32) (int, error) {
 
 func (c counterCluster) GetUInt64Value(offset uint32) (int, error) {
 	return c.getValue(offset, int64Bits, signPositive)
+}
+
+func (c counterCluster) Incr(offset uint32) (int, error) {
+	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
+	curNum, err := c.getValue(offset, int32Bits, signPositive)
+	curNum = curNum + 1
+	err = c.setValue(offset, curNum, int32Bits)
+	return curNum, err
+}
+
+func (c counterCluster) Decr(offset uint32) (int, error) {
+	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
+	curNum, err := c.getValue(offset, int32Bits, signPositive)
+	curNum = curNum - 1
+	err = c.setValue(offset, curNum, int32Bits)
+	return curNum, err
 }
