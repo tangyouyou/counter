@@ -56,3 +56,101 @@ Redis 主要通过 setbit、getbit 的命令设置 Bitmap 的数据结构，在 
 现在有了二进制的内容，通过程序将二进制转换为十进制，就可以还原业务的计数器数量
 
 细心的同学会发现，计数器默认使用 32位进行存储，但是对于一部分业务场景来说，只需要使用 8位、16位的数字；对于这种场景，实现原理：数据存储、数据读取都是按照 8-16位的方式进行存储，这样可以进一步的节约空间，当前仅当 int 类存储不下时，再进行 int 型的升位处理，该过程是不可逆的。
+
+# Go语言实现计数器 #
+对于计数器的实现原理，主要需要考虑以下方面的内容，“Redis setbit、gitbit命令操作”、Lua脚本保证数据一致性”、“二进制转十进制”、"十进制转二进制"、支持不同 int 类型的操作方法”
+
+二进制转十进制代码
+<pre>
+  func covertBinToBcd(s []string) (num int) {
+	l := len(s)
+	for i := l - 1; i >= 0; i-- {
+		str := s[l-i-1]
+		tmpInt, _ := strconv.Atoi(str)
+		num += (tmpInt & 0xf) << uint8(i)
+	}
+	return
+}
+</pre>
+
+十进制转二进制代码
+<pre>
+// Binary coded decimal is converted to Binary
+func convertBcdToBin(n int, bin int) (string, error) {
+	var b string
+	switch {
+	case n == 0:
+		for i := 0; i < bin; i++ {
+			b += "0"
+		}
+	case n > 0:
+		for ; n > 0; n /= 2 {
+			b = strconv.Itoa(n%2) + b
+		}
+		//加0
+		j := bin - len(b)
+		for i := 0; i < j; i++ {
+			b = "0" + b
+		}
+	case n < 0:
+		n = n * -1
+		s, _ := convertBcdToBin(n, bin)
+		for i := 0; i < len(s); i++ {
+			if s[i:i+1] == "1" {
+				b += "0"
+			} else {
+				b += "1"
+			}
+		}
+		n, err := strconv.ParseInt(b, 2, 64)
+		if err != nil {
+			return "", err
+		}
+		b, _ = convertBcdToBin(int(n+1), bin)
+	}
+	return b, nil
+}
+</pre>
+
+
+Lua脚本保证数据一致性代码
+<pre>
+setScript = `
+local offsetIndex = 2
+for _, value in ipairs(ARGV) do
+	redis.call("setbit", KEYS[1], KEYS[offsetIndex], value)
+    offsetIndex = offsetIndex + 1
+end
+`
+	getScript = `
+local bitArr = {}
+local bitIndex = 1
+for _, offset in ipairs(ARGV) do
+	bitArr[bitIndex] = tostring(redis.call("getbit", KEYS[1], offset))
+	bitIndex = bitIndex + 1
+end
+return bitArr
+`
+</pre>
+
+支持不同 int 类型的操作方法
+<pre>
+Counter interface {
+		SetInt8Value(offset uint32, value int8) error
+		SetInt16Value(offset uint32, value int16) error
+		SetInt32Value(offset uint32, value int32) error
+		SetInt64Value(offset uint32, value int64) error
+		SetUInt8Value(offset uint32, value uint8) error
+		SetUInt16Value(offset uint32, value uint16) error
+		SetUInt32Value(offset uint32, value uint32) error
+		SetUInt64Value(offset uint32, value uint64) error
+		GetInt8Value(offset uint32) (int, error)
+		GetInt16Value(offset uint32) (int, error)
+		GetInt32Value(offset uint32) (int, error)
+		GetInt64Value(offset uint32) (int, error)
+		GetUInt8Value(offset uint32) (int, error)
+		GetUInt16Value(offset uint32) (int, error)
+		GetUInt32Value(offset uint32) (int, error)
+		GetUInt64Value(offset uint32) (int, error)
+}
+</pre>
