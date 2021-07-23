@@ -10,12 +10,12 @@ import (
 )
 
 const (
-	int8Bits     = 8
-	int16Bits    = 16
-	int32Bits    = 32
-	uint8Bits    = -8
-	uint16Bits   = -16
-	uint32Bits   = -32
+	int8Bits     = -8
+	int16Bits    = -16
+	int32Bits    = -32
+	uint8Bits    = 8
+	uint16Bits   = 16
+	uint32Bits   = 32
 	signPositive = 1
 	signNegative = -1
 
@@ -224,10 +224,12 @@ func (c counterCluster) SetValue(offset uint32, value int) error {
 
 func (c counterCluster) GetValue(offset uint32) (int, error) {
 	sign := signPositive
+	bits := c.bits
 	if c.bits < 0 {
+		bits = -c.bits
 		sign = signNegative
 	}
-	return c.getValue(offset, c.bits, sign)
+	return c.getValue(offset, bits, sign)
 }
 
 func (c counterCluster) Incr(offset uint32) (int, error) {

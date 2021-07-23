@@ -104,6 +104,44 @@ func TestCounterCluster_SetInt16Value(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCounterCluster_GetValue(t *testing.T) {
+	var err error
+	counter, _ := NewCounter(redisDb, keyInt32, int32Bits)
+
+	err = counter.SetValue(0, 32767)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num0, err := counter.GetValue(0)
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		assert.Equal(t, num0, 32767)
+	}
+
+	err = counter.SetValue(1, math.MinInt32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num1, err := counter.GetValue(1)
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		assert.Equal(t, num1, math.MinInt32)
+	}
+
+	err = counter.SetValue(2, math.MaxInt32)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num2, err := counter.GetValue(2)
+	if err != nil {
+		t.Fatal(err)
+	} else {
+		assert.Equal(t, num2, math.MaxInt32)
+	}
+}
+
 func TestCounterCluster_Incr(t *testing.T) {
 	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
 	counter.SetValue(0, 100)
