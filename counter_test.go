@@ -104,6 +104,61 @@ func TestCounterCluster_SetInt16Value(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCounterCluster_SetUInt16Value(t *testing.T) {
+	var err error
+	counter, _ := NewCounter(redisDb, keyUInt16, uint16Bits)
+
+	err = counter.SetValue(0, 333)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(1, math.MaxUint16)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(2, math.MaxUint16 + 1)
+	assert.Error(t, err)
+
+	err = counter.SetValue(3, -1)
+	assert.Error(t, err)
+}
+
+func TestCounterCluster_SetInt32Value(t *testing.T) {
+	var err error
+	counter, _ := NewCounter(redisDb, keyInt32, int32Bits)
+
+	err = counter.SetValue(0, 123456789)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = counter.SetValue(1, math.MaxInt32)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(2, math.MaxInt32 + 133)
+	assert.Error(t, err)
+
+	err = counter.SetValue(3, math.MaxInt32)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(4, math.MinInt32-1)
+	assert.Error(t, err)
+}
+
+func TestCounterCluster_SetUInt32Value(t *testing.T) {
+	var err error
+	counter, _ := NewCounter(redisDb, keyUInt32, uint32Bits)
+
+	err = counter.SetValue(0, 888999)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(1, math.MaxUint32)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(2, math.MaxUint32 + 1)
+	assert.Error(t, err)
+
+	err = counter.SetValue(3, -789)
+	assert.Error(t, err)
+}
+
 func TestCounterCluster_GetValue(t *testing.T) {
 	var err error
 	counter, _ := NewCounter(redisDb, keyInt32, int32Bits)
@@ -144,7 +199,9 @@ func TestCounterCluster_GetValue(t *testing.T) {
 
 func TestCounterCluster_Incr(t *testing.T) {
 	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
-	counter.SetValue(0, 100)
+	err := counter.SetValue(0, 100)
+	assert.Nil(t, err)
+
 	num0, err := counter.GetValue(0)
 	if err != nil {
 		t.Fatal(err)
@@ -197,6 +254,35 @@ func TestCounterCluster_DecrCount(t *testing.T) {
 	num0, _ := counter.DecrCount(0, 18888888888)
 	assert.Equal(t, num0, 100000000 - 18888888888)
 }
+
+func BenchmarkCounterCluster_Incr(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_, _ = counter.Incr(0)
+	}
+}
+
+func BenchmarkCounterCluster_Decr(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_, _ = counter.Decr(0)
+	}
+}
+
+func BenchmarkCounterCluster_IncrCount(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_, _ = counter.IncrCount(0,10)
+	}
+}
+
+func BenchmarkCounterCluster_DecrCount(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_, _ = counter.DecrCount(0, 10)
+	}
+}
+
 
 
 
