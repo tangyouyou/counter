@@ -143,22 +143,20 @@ return bitArr
 
 **支持不同 int 类型的操作方法**
 <pre>
-Counter interface {
-		SetInt8Value(offset uint32, value int8) error
-		SetInt16Value(offset uint32, value int16) error
-		SetInt32Value(offset uint32, value int32) error
-		SetInt64Value(offset uint32, value int64) error
-		SetUInt8Value(offset uint32, value uint8) error
-		SetUInt16Value(offset uint32, value uint16) error
-		SetUInt32Value(offset uint32, value uint32) error
-		SetUInt64Value(offset uint32, value uint64) error
-		GetInt8Value(offset uint32) (int, error)
-		GetInt16Value(offset uint32) (int, error)
-		GetInt32Value(offset uint32) (int, error)
-		GetInt64Value(offset uint32) (int, error)
-		GetUInt8Value(offset uint32) (int, error)
-		GetUInt16Value(offset uint32) (int, error)
-		GetUInt32Value(offset uint32) (int, error)
-		GetUInt64Value(offset uint32) (int, error)
-}
+type (
+	Counter interface {
+		SetValue(offset uint8, value int) error
+		GetValue(offset uint8) (int, error)
+		Incr(offset uint8) (int, error)
+		Decr(offset uint8) (int, error)
+		IncrCount(offset uint8, count int) (int, error)
+		DecrCount(offset uint8, count int) (int, error)
+	}
+
+	counterCluster struct {
+		r    *redis.Client
+		key  string
+		bits int
+	}
+)
 </pre>
