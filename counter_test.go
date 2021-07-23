@@ -14,12 +14,10 @@ var redisDb *redis.Client
 var keyInt8 string
 var keyInt16 string
 var keyInt32 string
-var keyInt64 string
 
-var keyUint8 string
-var keyUint16 string
-var keyUint32 string
-var keyUint64 string
+var keyUInt8 string
+var keyUInt16 string
+var keyUInt32 string
 
 func init() {
 	host := "192.168.244.78"
@@ -39,124 +37,130 @@ func init() {
 	keyInt8 = "user_int8_190950"
 	keyInt16 = "user_int16_190950"
 	keyInt32 = "user_int32_190950"
-	keyInt64 = "user_int64_190950"
 
-	keyUint8 = "user_uint8_190950"
-	keyUint16 = "user_uint16_190950"
-	keyUint32 = "user_uint32_190950"
-	keyUint64 = "user_uint64_190950"
+	keyUInt8 = "user_uint8_190950"
+	keyUInt16 = "user_uint16_190950"
+	keyUInt32 = "user_uint32_190950"
 }
 
 func TestCounterCluster_SetInt8Value(t *testing.T) {
 	var err error
-	counter := NewCounter(redisDb, keyInt8)
+	counter, _ := NewCounter(redisDb, keyInt8, int8Bits)
 
-	err = counter.SetInt8Value(0, 29)
+	err = counter.SetValue(0, 29)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = counter.SetInt8Value(1, 125)
+	err = counter.SetValue(1, math.MaxInt8)
 	assert.Nil(t, err)
-	err = counter.SetInt8Value(2, -5)
+
+	err = counter.SetValue(2, math.MaxInt8 + 1)
+	assert.Error(t, err)
+
+	err = counter.SetValue(3, math.MinInt8)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(4, math.MinInt8-1)
+	assert.Error(t, err)
+}
+
+func TestCounterCluster_SetUInt8Value(t *testing.T) {
+	var err error
+	counter, _ := NewCounter(redisDb, keyUInt8, uint8Bits)
+
+	err = counter.SetValue(0, 29)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(1, math.MaxInt8)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(2, math.MaxInt8 + 1)
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	err = counter.SetValue(3, -1)
+	assert.Error(t, err)
 }
 
 func TestCounterCluster_SetInt16Value(t *testing.T) {
 	var err error
-	counter := NewCounter(redisDb, keyInt16)
+	counter, _ := NewCounter(redisDb, keyInt16, int16Bits)
 
-	err = counter.SetInt16Value(0, 29)
+	err = counter.SetValue(0, 32767)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = counter.SetInt16Value(1, 125)
+	err = counter.SetValue(1, math.MaxInt16)
 	assert.Nil(t, err)
-	err = counter.SetInt16Value(2, 32767)
-	if err != nil {
-		t.Fatal(err)
-	}
+
+	err = counter.SetValue(2, math.MaxInt16 + 133)
+	assert.Error(t, err)
+
+	err = counter.SetValue(3, math.MinInt16)
+	assert.Nil(t, err)
+
+	err = counter.SetValue(4, math.MinInt16-1)
+	assert.Error(t, err)
 }
 
-func TestCounterCluster_SetInt32Value(t *testing.T) {
-	var err error
-	counter := NewCounter(redisDb, keyInt32)
+func TestCounterCluster_Incr(t *testing.T) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	counter.SetValue(0, 100)
+	num0, err := counter.GetValue(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, num0, 100)
 
-	err = counter.SetInt32Value(0, 0)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < 100; i++ {
+		num0, _ = counter.Incr(0)
 	}
-	err = counter.SetInt32Value(1, 29)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = counter.SetInt32Value(2, -5)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = counter.SetInt32Value(3, math.MaxInt32)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = counter.SetInt32Value(4, math.MinInt32)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Equal(t, num0, 200)
 }
 
-func TestCounterCluster_GetInt32Value(t *testing.T) {
-	counter := NewCounter(redisDb, keyInt32)
-	num0, _ := counter.GetInt32Value(0)
-	assert.Equal(t, num0, 0)
-	num1, _ := counter.GetInt32Value(1)
-	assert.Equal(t, num1, 29)
-	num2, _ := counter.GetInt32Value(2)
-	assert.Equal(t, num2, -5)
-	num3, _ := counter.GetInt32Value(3)
-	assert.Equal(t, num3, math.MaxInt32)
-	num4, _ := counter.GetInt32Value(4)
-	assert.Equal(t, num4, math.MinInt32)
+func TestCounterCluster_IncrCount(t *testing.T) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	err := counter.SetValue(0, 100)
+	assert.Nil(t, err)
+
+	num0, err := counter.GetValue(0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assert.Equal(t, num0, 100)
+
+	num0, _ = counter.IncrCount(0, 10000000)
+	assert.Equal(t, num0, 10000000 + 100)
 }
 
-func TestCounterCluster_SetUInt32Value(t *testing.T) {
-	var err error
-	counter := NewCounter(redisDb, keyUint32)
+func TestCounterCluster_Decr(t *testing.T) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	err := counter.SetValue(0, 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+	num0, _ := counter.Decr(0)
+	assert.Equal(t, num0, 99)
 
-	err = counter.SetUInt32Value(0, math.MaxUint32)
-	if err != nil {
-		t.Fatal(err)
+	for i := 0; i < 90; i++ {
+		num0, _ = counter.Decr(0)
 	}
-	err = counter.SetUInt32Value(1, 123)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Equal(t, num0, 9)
 }
 
-func TestCounterCluster_GetUInt32Value(t *testing.T) {
-	counter := NewCounter(redisDb, keyUint32)
-	num1, _ := counter.GetUInt32Value(0)
-	assert.Equal(t, num1, math.MaxUint32)
-	num2, _ := counter.GetUInt32Value(1)
-	assert.Equal(t, num2, 123)
+func TestCounterCluster_DecrCount(t *testing.T) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	err := counter.SetValue(0, 100000000)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	num0, _ := counter.DecrCount(0, 18888888888)
+	assert.Equal(t, num0, 100000000 - 18888888888)
 }
 
-func TestCounterCluster_SetInt64Value(t *testing.T) {
-	var err error
-	counter := NewCounter(redisDb, keyInt64)
 
-	err = counter.SetInt64Value(0, 29)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = counter.SetInt64Value(1, 123456789)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = counter.SetInt64Value(2, 3335555666677)
-	if err != nil {
-		t.Fatal(err)
-	}
-}
+
 
 

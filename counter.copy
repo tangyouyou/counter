@@ -50,6 +50,8 @@ type (
 		GetUInt16Value(offset uint32) (int, error)
 		GetUInt32Value(offset uint32) (int, error)
 		GetUInt64Value(offset uint32) (int, error)
+		Incr(offset uint32) (int, error)
+		Decr(offset uint32) (int, error)
 	}
 
 	counterCluster struct {
@@ -60,6 +62,7 @@ type (
 )
 
 func NewCounter(redisDb *redis.Client, key string) Counter {
+	// todo 位数整合到对象初始化过程中, 位升级过程考虑支持
 	counter := counterCluster{
 		r:   redisDb,
 		key: key,
