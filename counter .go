@@ -39,12 +39,12 @@ return bitArr
 
 type (
 	Counter interface {
-		SetValue(offset uint32, value int) error
-		GetValue(offset uint32) (int, error)
-		Incr(offset uint32) (int, error)
-		Decr(offset uint32) (int, error)
-		IncrCount(offset uint32, count int) (int, error)
-		DecrCount(offset uint32, count int) (int, error)
+		SetValue(offset uint8, value int) error
+		GetValue(offset uint8) (int, error)
+		Incr(offset uint8) (int, error)
+		Decr(offset uint8) (int, error)
+		IncrCount(offset uint8, count int) (int, error)
+		DecrCount(offset uint8, count int) (int, error)
 	}
 
 	counterCluster struct {
@@ -156,7 +156,7 @@ func (c counterCluster) buildOffsetArgs(value int, bits int) ([]string, error) {
 	return args, err
 }
 
-func (c counterCluster) setValue(offset uint32, value int, bits int) error {
+func (c counterCluster) setValue(offset uint8, value int, bits int) error {
 	if err := c.validValue(value); err != nil {
 		return err
 	}
@@ -166,7 +166,7 @@ func (c counterCluster) setValue(offset uint32, value int, bits int) error {
 	args, _ := c.buildOffsetArgs(value, bits)
 	keys := make([]string, 0)
 	keys = append(keys, c.key)
-	startOffset := int(offset * uint32(bits))
+	startOffset := int(offset * uint8(bits))
 	for i := 0; i < bits; i++ {
 		currentOffset := startOffset + i
 		keys = append(keys, strconv.Itoa(currentOffset))
@@ -182,9 +182,9 @@ func (c counterCluster) setValue(offset uint32, value int, bits int) error {
 	return err
 }
 
-func (c counterCluster) getValue(offset uint32, bits int, sign int) (int, error) {
+func (c counterCluster) getValue(offset uint8, bits int, sign int) (int, error) {
 	args := make([]string, 0)
-	startOffset := int(offset * uint32(bits))
+	startOffset := int(offset * uint8(bits))
 	for i := 0; i < bits; i++ {
 		currentOffset := startOffset + i
 		args = append(args, strconv.Itoa(currentOffset))
@@ -218,11 +218,11 @@ func (c counterCluster) getValue(offset uint32, bits int, sign int) (int, error)
 	return num, err
 }
 
-func (c counterCluster) SetValue(offset uint32, value int) error {
+func (c counterCluster) SetValue(offset uint8, value int) error {
 	return c.setValue(offset, value, c.bits)
 }
 
-func (c counterCluster) GetValue(offset uint32) (int, error) {
+func (c counterCluster) GetValue(offset uint8) (int, error) {
 	sign := signPositive
 	bits := c.bits
 	if c.bits < 0 {
@@ -232,7 +232,7 @@ func (c counterCluster) GetValue(offset uint32) (int, error) {
 	return c.getValue(offset, bits, sign)
 }
 
-func (c counterCluster) Incr(offset uint32) (int, error) {
+func (c counterCluster) Incr(offset uint8) (int, error) {
 	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
 	value, err := c.GetValue(offset)
 	if err != nil {
@@ -246,7 +246,7 @@ func (c counterCluster) Incr(offset uint32) (int, error) {
 	return value, err
 }
 
-func (c counterCluster) Decr(offset uint32) (int, error) {
+func (c counterCluster) Decr(offset uint8) (int, error) {
 	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
 	value, err := c.GetValue(offset)
 	if err != nil {
@@ -260,7 +260,7 @@ func (c counterCluster) Decr(offset uint32) (int, error) {
 	return value, err
 }
 
-func (c counterCluster) IncrCount(offset uint32, count int) (int, error) {
+func (c counterCluster) IncrCount(offset uint8, count int) (int, error) {
 	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
 	value, err := c.GetValue(offset)
 	if err != nil {
@@ -274,7 +274,7 @@ func (c counterCluster) IncrCount(offset uint32, count int) (int, error) {
 	return value, err
 }
 
-func (c counterCluster) DecrCount(offset uint32, count int) (int, error) {
+func (c counterCluster) DecrCount(offset uint8, count int) (int, error) {
 	// 并发一致性保证 & 数据位数调整？ todo lua 脚本
 	value, err := c.GetValue(offset)
 	if err != nil {

@@ -140,6 +140,12 @@ func TestCounterCluster_SetInt32Value(t *testing.T) {
 
 	err = counter.SetValue(4, math.MinInt32-1)
 	assert.Error(t, err)
+
+	err = counter.SetValue(255, 789)
+	assert.Nil(t, err)
+
+	num0, err := counter.GetValue(255)
+	assert.Equal(t, num0,789)
 }
 
 func TestCounterCluster_SetUInt32Value(t *testing.T) {
@@ -253,6 +259,20 @@ func TestCounterCluster_DecrCount(t *testing.T) {
 
 	num0, _ := counter.DecrCount(0, 18888888888)
 	assert.Equal(t, num0, 100000000 - 18888888888)
+}
+
+func BenchmarkCounterCluster_SetValue(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_ = counter.SetValue(0, 100)
+	}
+}
+
+func BenchmarkCounterCluster_GetValue(b *testing.B) {
+	counter,_ := NewCounter(redisDb, keyInt32, int32Bits)
+	for i := 0; i < b.N; i++ {
+		_, _ = counter.GetValue(0)
+	}
 }
 
 func BenchmarkCounterCluster_Incr(b *testing.B) {
